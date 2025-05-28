@@ -1,14 +1,15 @@
-
 {% load static %}
+{% load dict_filters %}
+
 <!DOCTYPE html>
 <html lang="sr">
 <head>
     <meta charset="UTF-8">
-    <title>📋 Jutarnji pregled</title>
+    <title>📋 Dnevni pregled</title>
 </head>
 <body>
 
-<<h2>📋 Dnevni pregled za: {{ danas|date:"F d, Y" }}</h2>
+<h2>📋 Dnevni pregled za: {{ danas|date:"F d, Y" }}</h2>
 
 {% for uprava_id, prisustva in tabela.items %}
     <h3>Uprava ID: {{ uprava_id }}</h3>
@@ -30,6 +31,18 @@
         </tr>
         {% endfor %}
     </table>
+
+    {% with stats=statistike|get_item:uprava_id %}
+        <h4>📊 Statistika:</h4>
+        <p>Ukupno zaposlenih: {{ stats.ukupno }}</p>
+        <ul>
+            {% for status, procenat in stats.procenti.items %}
+                <li>Status "{{ status }}": {{ procenat }} ({{ stats.brojevi|get_item:status }} osoba)</li>
+            {% endfor %}
+        </ul>
+    {% endwith %}
     <br>
 {% endfor %}
+
+</body>
 </html>

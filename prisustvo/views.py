@@ -89,6 +89,69 @@ def jutarnji_unos_view(request):
 def dnevni_pregled_view(request):
     today = timezone.now().date()
     tabela = {}
+    statistike = {}
+
+    if request.user.is_superuser:
+        uprave = Zaposleni.objects.values_list('uprava', flat=True).distinct()
+        for uprava_id in uprave:
+            zaposleni_uprave = Zaposleni.objects.filter(uprava_id=uprava_id)
+            prisustva = PrisustvoNaDan.objects.filter(
+                datum=today, zaposleni__in=zaposleni_uprave
+            ).select_related('zaposleni')
+
+            tabela[uprava_id] = prisustva
+
+            # Statistika
+            ukupno = zaposleni_uprave.count()
+            status_count = {}
+            for p in prisustva:
+                status_count[p.status] = status_count.get(p.status, 0) + 1
+
+            procenti = {
+                status: f"{(count / ukupno) * 100:.0f}%"
+                for status, count in status_count.items()
+            } if ukupno > 0 else {}
+
+            statistike[uprava_id] = {
+                'ukupno': ukupno,
+                'brojevi': status_count,
+                'procenti': procenti,
+            }
+
+    elif hasattr(request.user, 'zaposleni'):
+        uprava = request.user.zaposleni.uprava
+        zaposleni_uprave = Zaposleni.objects.filter(uprava=uprava)
+        prisustva = PrisustvoNaDan.objects.filter(
+            datum=today, zaposleni__in=zaposleni_uprave
+        ).select_related('zaposleni')
+
+        tabela[uprava.id] = prisustva
+
+        # Statistika
+        ukupno = zaposleni_uprave.count()
+        status_count = {}
+        for p in prisustva:
+            status_count[p.status] = status_count.get(p.status, 0) + 1
+
+        procenti = {
+            status: f"{(count / ukupno) * 100:.0f}%"
+            for status, count in status_count.items()
+        } if ukupno > 0 else {}
+
+        statistike[uprava.id] = {
+            'ukupno': ukupno,
+            'brojevi': status_count,
+            'procenti': procenti,
+        }
+
+    return render(request, 'prisustvo/dnevni_pregled.html', {
+        'tabela': tabela,
+        'statistike': statistike,
+        'danas': today
+    })
+
+    today = timezone.now().date()
+    tabela = {}
 
     if request.user.is_superuser:
         uprave = Zaposleni.objects.values_list('uprava', flat=True).distinct()
