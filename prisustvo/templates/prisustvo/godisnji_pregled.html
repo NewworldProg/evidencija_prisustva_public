@@ -1,0 +1,21 @@
+<h2>📆 Godišnji pregled (svi meseci)</h2>
+<table border="1">
+    <thead>
+        <tr>
+            <th>Zaposleni</th>
+            <th>Datum</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for zaposleni, dani in agregat.items %}
+            {% for datum, status in dani.items %}
+            <tr>
+                <td>{{ zaposleni }}</td>
+                <td>{{ datum }}</td>
+                <td>{{ status }}</td>
+            </tr>
+            {% endfor %}
+        {% endfor %}
+    </tbody>
+</table>

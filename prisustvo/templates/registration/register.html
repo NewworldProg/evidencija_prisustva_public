@@ -1,0 +1,19 @@
+
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <title>Registracija</title>
+</head>
+<body>
+    <h2>📝 Registrujte se</h2>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Registruj se</button>
+    </form>
+
+    <p><a href="{% url 'home' %}">← Nazad na početnu</a></p>
+</body>
+</html>

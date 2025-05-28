@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <title>Početna stranica - Evidencija</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 30px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+
+        h1 {
+            color: #1a73e8;
+        }
+
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        li {
+            margin: 8px 0;
+        }
+
+        a {
+            text-decoration: none;
+            color: #007acc;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .blok {
+            margin-bottom: 40px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            max-width: 600px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>📋 Dobrodošli u sistem evidencije</h1>
+
+    {% if user.is_authenticated %}
+        <div class="blok">
+            <p>👋 Pozdrav, <strong>{{ user.username }}</strong>!</p>
+            <ul>
+                <li><a href="{% url 'jutarnji_unos' %}">➕ Unos prisustva</a></li>
+                <li><a href="{% url 'mesecni_pregled' %}">📅 Mesečni pregled</a></li>
+                <li><a href="{% url 'godisnji_pregled' %}">📊 Godišnji pregled</a></li>
+                <li><a href="{% url 'privatno' %}">🔒 Privatna stranica</a></li>
+                <form method="post" action="{% url 'logout' %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit">🚪 Izloguj se</button>
+                </form>
+
+            </ul>
+        </div>
+    {% else %}
+        <div class="blok">
+            <h2>🔐 Pristup za ovlašćene korisnike</h2>
+            <p><a href="{% url 'login' %}">Prijava</a> za unos i izmenu podataka.</p>
+        </div>
+    {% endif %}
+
+</body>
+</html>

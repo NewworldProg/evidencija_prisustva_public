@@ -1,0 +1,10 @@
+Hocu da
+napravim da izgleda kao Excel
+daje svima view a adminu daje prava da ispravi na mesecnom nivou
+na godisnjem nivou tabela je zapravo samo view od svih mesecnih koji mogu biti 12 prozora koji se uvecavaju klikom
+flowchart djanga
+flowchart SQL
+
+------------------------------
+
+primetio sam da kod kuce nemam nke podatke iz SQL tabele koje na lap topu na poslu imam, odnosno ne prenose se svi podaci iz SQL sa komjutera na kompjuter

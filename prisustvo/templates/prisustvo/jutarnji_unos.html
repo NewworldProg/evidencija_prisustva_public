@@ -1,0 +1,74 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <title>Jutarnji unos</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #999;
+            padding: 6px 12px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f0f0f0;
+        }
+
+        .success {
+            color: green;
+        }
+
+        .error {
+            color: red;
+        }
+
+        h2 {
+            color: #1a73e8;
+        }
+    </style>
+</head>
+<body>
+
+<h2>📋 Jutarnji unos za: {{ danas|date:"F d, Y" }}</h2>
+
+{% if messages %}
+    {% for message in messages %}
+        <p class="{{ message.tags }}">{{ message }}</p>
+    {% endfor %}
+{% endif %}
+
+<form method="post">
+    {% csrf_token %}
+    <table>
+        <tr>
+            <th>Rb</th>
+            <th>Ime i prezime</th>
+            <th>Čin</th>
+            <th>Lokal</th>
+            <th>Status</th>
+        </tr>
+        {% for form, z in combined %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ z.ime_prezime }}</td>
+            <td>{{ z.cin }}</td>
+            <td>{{ z.lokal }}</td>
+            <td>
+                {{ form.zaposleni }} {# hidden input #}
+                {{ form.status }}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    <br>
+    <button type="submit">✅ Sačuvaj prisustvo</button>
+</form>
+
+</body>
+</html>
