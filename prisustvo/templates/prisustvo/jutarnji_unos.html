@@ -53,7 +53,7 @@
             <th>Lokal</th>
             <th>Status</th>
         </tr>
-        {% for form, z in combined %}
+        {% for form, z in formovi %}
         <tr>
             <td>{{ forloop.counter }}</td>
             <td>{{ z.ime_prezime }}</td>
@@ -69,6 +69,7 @@
     <br>
     <button type="submit">✅ Sačuvaj prisustvo</button>
 </form>
+
 
 </body>
 </html>

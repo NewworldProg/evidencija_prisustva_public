@@ -6,7 +6,7 @@ from datetime import date
 from django.contrib import messages
 
 from .models import PrisustvoNaDan, PrisustvoMesec, Zaposleni
-from .forms import PrisustvoFormset, FilterForma
+from .forms import PrisustvoFormset, FilterForma, PrisustvoZaZaposlenogForm
 
 
 def home_view(request):
@@ -24,7 +24,9 @@ def jutarnji_unos_view(request):
             svi_zaposleni = svi_zaposleni.filter(uprava__id=uprava_id)
     else:
         if hasattr(request.user, 'zaposleni'):
-            svi_zaposleni = Zaposleni.objects.filter(uprava=request.user.zaposleni.uprava).order_by('ime_prezime')
+            svi_zaposleni = Zaposleni.objects.filter(
+                uprava=request.user.zaposleni.uprava
+            ).order_by('ime_prezime')
         else:
             svi_zaposleni = Zaposleni.objects.none()
 
@@ -32,58 +34,63 @@ def jutarnji_unos_view(request):
         p.zaposleni_id: p for p in PrisustvoNaDan.objects.filter(datum=today)
     }
 
-    initial_data = []
-    for zaposleni in svi_zaposleni:
-        prisustvo = prisustva_dict.get(zaposleni.id)
-        if prisustvo:
-            initial_data.append({
-                'zaposleni': zaposleni,
-                'status': prisustvo.status,
-                'id': prisustvo.id
-            })
-        else:
-            initial_data.append({'zaposleni': zaposleni})
+    formovi = []
 
     if request.method == 'POST':
-        formset = PrisustvoFormset(request.POST)
-        if formset.is_valid():
-            for form in formset:
-                if form.cleaned_data:
-                    zaposleni = form.cleaned_data['zaposleni']
-                    status = form.cleaned_data['status']
-                    PrisustvoNaDan.objects.update_or_create(
-                        zaposleni=zaposleni,
-                        datum=today,
-                        defaults={'status': status}
-                    )
-                    PrisustvoMesec.objects.update_or_create(
-                        zaposleni=zaposleni,
-                        godina=today.year,
-                        mesec=today.month,
-                        dan=today.day,
-                        defaults={'status': status}
-                    )
+        post_data = request.POST.copy()
+        for zaposleni in svi_zaposleni:
+            prefix = str(zaposleni.id)
+            post_data[f"{prefix}-zaposleni"] = zaposleni.id
+            form = PrisustvoZaZaposlenogForm(post_data, prefix=prefix)
+            formovi.append((form, zaposleni))
+
+        if all(form.is_valid() for form, _ in formovi):
+            for form, zaposleni in formovi:
+                status = form.cleaned_data['status']
+                PrisustvoNaDan.objects.update_or_create(
+                    zaposleni=zaposleni,
+                    datum=today,
+                    defaults={'status': status}
+                )
+                PrisustvoMesec.objects.update_or_create(
+                    zaposleni=zaposleni,
+                    godina=today.year,
+                    mesec=today.month,
+                    dan=today.day,
+                    defaults={'status': status}
+                )
             messages.success(request, "✅ Prisustvo uspešno sačuvano.")
-            return redirect('jutarnji_dash')
+            return redirect('dnevni_pregled')
         else:
             messages.error(request, "❌ Greška u formi.")
-    else:
-        formset = PrisustvoFormset(initial=initial_data, queryset=PrisustvoNaDan.objects.none())
+            for form, z in formovi:
+                if not form.is_valid():
+                    print(f"❌ Greška za {z}: {form.errors}")
 
-    combined = zip(formset.forms, svi_zaposleni)
+    else:
+        for zaposleni in svi_zaposleni:
+            prisustvo = prisustva_dict.get(zaposleni.id)
+            initial = {
+                'zaposleni': zaposleni,
+                'status': prisustvo.status if prisustvo else ''
+            }
+            form = PrisustvoZaZaposlenogForm(initial=initial, prefix=str(zaposleni.id))
+            formovi.append((form, zaposleni))
+
     return render(request, 'prisustvo/jutarnji_unos.html', {
-        'formset': formset,
-        'combined': combined,
+        'formovi': formovi,
         'danas': today
     })
 
 
-
 @login_required
-def jutarnji_dash_view(request):
+def dnevni_pregled_view(request):
     today = timezone.now().date()
-    prisustva = PrisustvoNaDan.objects.filter(datum=today).select_related('zaposleni').order_by('zaposleni__ime_prezime')
-    return render(request, 'prisustvo/jutarnji_dash.html', {
+    prisustva = PrisustvoNaDan.objects.filter(
+        datum=today
+    ).select_related('zaposleni').order_by('zaposleni__ime_prezime')
+
+    return render(request, 'prisustvo/dnevni_pregled.html', {
         'prisustva': prisustva,
         'danas': today
     })
@@ -106,6 +113,7 @@ def register_view(request):
         form = UserCreationForm()
     return render(request, 'registration/register.html', {'form': form})
 
+
 @login_required
 def mesecni_pregled_view(request):
     danas = date.today()
@@ -116,7 +124,6 @@ def mesecni_pregled_view(request):
     mesec = int(mesec_str) if mesec_str else danas.month
 
     uprava_id = request.GET.get('uprava')
-
     forma = FilterForma(request.GET or None)
 
     zaposlenici = Zaposleni.objects.all().select_related('uprava')
