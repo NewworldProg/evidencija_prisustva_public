@@ -85,85 +85,6 @@ def jutarnji_unos_view(request):
         'danas': today
     })
 
-    today = timezone.now().date()
-
-    if request.user.is_superuser:
-        uprava_id = request.GET.get("uprava")
-        svi_zaposleni = Zaposleni.objects.all().order_by('ime_prezime')
-        if request.user.is_superuser:
-            uprave = Zaposleni.objects.values_list('uprava', flat=True).distinct()
-            uprava_map = {}
-            for uprava_id in uprave:
-                zaposleni_uprave = Zaposleni.objects.filter(uprava_id=uprava_id).order_by('ime_prezime')
-                uprava_map[uprava_id] = zaposleni_uprave
-
-        else:
-            if hasattr(request.user, 'zaposleni'):
-                uprava = request.user.zaposleni.uprava
-                uprava_map = {uprava.id: Zaposleni.objects.filter(uprava=uprava).order_by('ime_prezime')}
-            else:
-                uprava_map = {}
-    else:
-        if hasattr(request.user, 'zaposleni'):
-            svi_zaposleni = Zaposleni.objects.filter(
-                uprava=request.user.zaposleni.uprava
-            ).order_by('ime_prezime')
-        else:
-            svi_zaposleni = Zaposleni.objects.none()
-
-    prisustva_dict = {
-        p.zaposleni_id: p for p in PrisustvoNaDan.objects.filter(datum=today)
-    }
-
-    formovi = []
-
-    if request.method == 'POST':
-        post_data = request.POST.copy()
-        for zaposleni in svi_zaposleni:
-            prefix = str(zaposleni.id)
-            post_data[f"{prefix}-zaposleni"] = zaposleni.id
-            form = PrisustvoZaZaposlenogForm(post_data, prefix=prefix)
-            formovi.append((form, zaposleni))
-
-        if all(form.is_valid() for form, _ in formovi):
-            for form, zaposleni in formovi:
-                status = form.cleaned_data['status']
-                PrisustvoNaDan.objects.update_or_create(
-                    zaposleni=zaposleni,
-                    datum=today,
-                    defaults={'status': status}
-                )
-                PrisustvoMesec.objects.update_or_create(
-                    zaposleni=zaposleni,
-                    godina=today.year,
-                    mesec=today.month,
-                    dan=today.day,
-                    defaults={'status': status}
-                )
-            messages.success(request, "✅ Prisustvo uspešno sačuvano.")
-            return redirect('dnevni_pregled')
-        else:
-            messages.error(request, "❌ Greška u formi.")
-            for form, z in formovi:
-                if not form.is_valid():
-                    print(f"❌ Greška za {z}: {form.errors}")
-
-    else:
-        for zaposleni in svi_zaposleni:
-            prisustvo = prisustva_dict.get(zaposleni.id)
-            initial = {
-                'zaposleni': zaposleni,
-                'status': prisustvo.status if prisustvo else ''
-            }
-            form = PrisustvoZaZaposlenogForm(initial=initial, prefix=str(zaposleni.id))
-            formovi.append((form, zaposleni))
-
-    return render(request, 'prisustvo/jutarnji_unos.html', {
-        'formovi': formovi,
-        'danas': today
-    })
-
-
 @login_required
 def dnevni_pregled_view(request):
     today = timezone.now().date()
@@ -189,24 +110,7 @@ def dnevni_pregled_view(request):
         'tabela': tabela,
         'danas': today
     })
-    today = timezone.now().date()
-
-    if request.user.is_superuser:
-        uprave = Zaposleni.objects.values_list('uprava', flat=True).distinct()
-        tabela = {}
-        for uprava_id in uprave:
-            zaposleni_uprave = Zaposleni.objects.filter(uprava_id=uprava_id)
-            prisustva = PrisustvoNaDan.objects.filter(datum=today, zaposleni__in=zaposleni_uprave).select_related('zaposleni')
-            tabela[uprava_id] = prisustva
-    else:
-        if hasattr(request.user, 'zaposleni'):
-            uprava = request.user.zaposleni.uprava
-            zaposleni_uprave = Zaposleni.objects.filter(uprava=uprava)
-            prisustva = PrisustvoNaDan.objects.filter(datum=today, zaposleni__in=zaposleni_uprave).select_related('zaposleni')
-            tabela = {uprava.id: prisustva}
-        else:
-            tabela = {}
-
+    
 @login_required
 def privatna_stranica(request):
     return render(request, 'prisustvo/privatno.html')
