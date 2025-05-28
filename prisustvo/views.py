@@ -16,7 +16,17 @@ def home_view(request):
 @login_required
 def jutarnji_unos_view(request):
     today = timezone.now().date()
-    svi_zaposleni = Zaposleni.objects.all().order_by('ime_prezime')
+
+    if request.user.is_superuser:
+        uprava_id = request.GET.get("uprava")
+        svi_zaposleni = Zaposleni.objects.all().order_by('ime_prezime')
+        if uprava_id:
+            svi_zaposleni = svi_zaposleni.filter(uprava__id=uprava_id)
+    else:
+        if hasattr(request.user, 'zaposleni'):
+            svi_zaposleni = Zaposleni.objects.filter(uprava=request.user.zaposleni.uprava).order_by('ime_prezime')
+        else:
+            svi_zaposleni = Zaposleni.objects.none()
 
     prisustva_dict = {
         p.zaposleni_id: p for p in PrisustvoNaDan.objects.filter(datum=today)
@@ -66,6 +76,7 @@ def jutarnji_unos_view(request):
         'combined': combined,
         'danas': today
     })
+
 
 
 @login_required

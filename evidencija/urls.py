@@ -19,5 +19,8 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('prisustvo.urls')),  # 👉 Dodaje sve rute iz aplikacije
+    path('', include('prisustvo.urls')),
+    path('accounts/', include('django.contrib.auth.urls')),  # 🔑 Ovo dodaje login/logout/password routes
 ]
+
+
