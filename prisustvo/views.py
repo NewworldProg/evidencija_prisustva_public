@@ -16,12 +16,93 @@ def home_view(request):
 @login_required
 def jutarnji_unos_view(request):
     today = timezone.now().date()
+    prisustva_dict = {
+        p.zaposleni_id: p for p in PrisustvoNaDan.objects.filter(datum=today)
+    }
+
+    uprava_map = {}
+
+    # Grupisanje po upravama
+    if request.user.is_superuser:
+        uprave = Zaposleni.objects.values_list('uprava', flat=True).distinct()
+        for uprava_id in uprave:
+            zaposleni = Zaposleni.objects.filter(uprava_id=uprava_id).order_by('ime_prezime')
+            uprava_map[uprava_id] = zaposleni
+    elif hasattr(request.user, 'zaposleni'):
+        uprava = request.user.zaposleni.uprava
+        zaposleni = Zaposleni.objects.filter(uprava=uprava).order_by('ime_prezime')
+        uprava_map[uprava.id] = zaposleni
+
+    # Forme po zaposlenima
+    formovi_po_upravama = {}
+    if request.method == 'POST':
+        post_data = request.POST.copy()
+        for uprava_id, zaposleni_lista in uprava_map.items():
+            formovi = []
+            for zaposleni in zaposleni_lista:
+                prefix = str(zaposleni.id)
+                post_data[f"{prefix}-zaposleni"] = zaposleni.id
+                form = PrisustvoZaZaposlenogForm(post_data, prefix=prefix)
+                formovi.append((form, zaposleni))
+            formovi_po_upravama[uprava_id] = formovi
+
+        # Validacija svih formi
+        if all(form.is_valid() for forms in formovi_po_upravama.values() for form, _ in forms):
+            for forms in formovi_po_upravama.values():
+                for form, zaposleni in forms:
+                    status = form.cleaned_data['status']
+                    PrisustvoNaDan.objects.update_or_create(
+                        zaposleni=zaposleni,
+                        datum=today,
+                        defaults={'status': status}
+                    )
+                    PrisustvoMesec.objects.update_or_create(
+                        zaposleni=zaposleni,
+                        godina=today.year,
+                        mesec=today.month,
+                        dan=today.day,
+                        defaults={'status': status}
+                    )
+            messages.success(request, "✅ Prisustvo uspešno sačuvano.")
+            return redirect('dnevni_pregled')
+        else:
+            messages.error(request, "❌ Greška u formi.")
+    else:
+        for uprava_id, zaposleni_lista in uprava_map.items():
+            formovi = []
+            for zaposleni in zaposleni_lista:
+                prisustvo = prisustva_dict.get(zaposleni.id)
+                initial = {
+                    'zaposleni': zaposleni,
+                    'status': prisustvo.status if prisustvo else ''
+                }
+                form = PrisustvoZaZaposlenogForm(initial=initial, prefix=str(zaposleni.id))
+                formovi.append((form, zaposleni))
+            formovi_po_upravama[uprava_id] = formovi
+
+    return render(request, 'prisustvo/jutarnji_unos.html', {
+        'formovi_po_upravama': formovi_po_upravama,
+        'danas': today
+    })
+
+    today = timezone.now().date()
 
     if request.user.is_superuser:
         uprava_id = request.GET.get("uprava")
         svi_zaposleni = Zaposleni.objects.all().order_by('ime_prezime')
-        if uprava_id:
-            svi_zaposleni = svi_zaposleni.filter(uprava__id=uprava_id)
+        if request.user.is_superuser:
+            uprave = Zaposleni.objects.values_list('uprava', flat=True).distinct()
+            uprava_map = {}
+            for uprava_id in uprave:
+                zaposleni_uprave = Zaposleni.objects.filter(uprava_id=uprava_id).order_by('ime_prezime')
+                uprava_map[uprava_id] = zaposleni_uprave
+
+        else:
+            if hasattr(request.user, 'zaposleni'):
+                uprava = request.user.zaposleni.uprava
+                uprava_map = {uprava.id: Zaposleni.objects.filter(uprava=uprava).order_by('ime_prezime')}
+            else:
+                uprava_map = {}
     else:
         if hasattr(request.user, 'zaposleni'):
             svi_zaposleni = Zaposleni.objects.filter(
@@ -86,15 +167,45 @@ def jutarnji_unos_view(request):
 @login_required
 def dnevni_pregled_view(request):
     today = timezone.now().date()
-    prisustva = PrisustvoNaDan.objects.filter(
-        datum=today
-    ).select_related('zaposleni').order_by('zaposleni__ime_prezime')
+    tabela = {}
+
+    if request.user.is_superuser:
+        uprave = Zaposleni.objects.values_list('uprava', flat=True).distinct()
+        for uprava_id in uprave:
+            zaposleni_uprave = Zaposleni.objects.filter(uprava_id=uprava_id)
+            prisustva = PrisustvoNaDan.objects.filter(
+                datum=today, zaposleni__in=zaposleni_uprave
+            ).select_related('zaposleni')
+            tabela[uprava_id] = prisustva
+    elif hasattr(request.user, 'zaposleni'):
+        uprava = request.user.zaposleni.uprava
+        zaposleni_uprave = Zaposleni.objects.filter(uprava=uprava)
+        prisustva = PrisustvoNaDan.objects.filter(
+            datum=today, zaposleni__in=zaposleni_uprave
+        ).select_related('zaposleni')
+        tabela[uprava.id] = prisustva
 
     return render(request, 'prisustvo/dnevni_pregled.html', {
-        'prisustva': prisustva,
+        'tabela': tabela,
         'danas': today
     })
+    today = timezone.now().date()
 
+    if request.user.is_superuser:
+        uprave = Zaposleni.objects.values_list('uprava', flat=True).distinct()
+        tabela = {}
+        for uprava_id in uprave:
+            zaposleni_uprave = Zaposleni.objects.filter(uprava_id=uprava_id)
+            prisustva = PrisustvoNaDan.objects.filter(datum=today, zaposleni__in=zaposleni_uprave).select_related('zaposleni')
+            tabela[uprava_id] = prisustva
+    else:
+        if hasattr(request.user, 'zaposleni'):
+            uprava = request.user.zaposleni.uprava
+            zaposleni_uprave = Zaposleni.objects.filter(uprava=uprava)
+            prisustva = PrisustvoNaDan.objects.filter(datum=today, zaposleni__in=zaposleni_uprave).select_related('zaposleni')
+            tabela = {uprava.id: prisustva}
+        else:
+            tabela = {}
 
 @login_required
 def privatna_stranica(request):

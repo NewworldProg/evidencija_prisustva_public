@@ -8,28 +8,28 @@
 </head>
 <body>
 
-<h2>📋 Jutarnji pregled za: {{ danas|date:"F d, Y" }}</h2>
+<<h2>📋 Dnevni pregled za: {{ danas|date:"F d, Y" }}</h2>
 
-<table border="1">
-    <tr>
-        <th>Rb</th>
-        <th>Ime i prezime</th>
-        <th>Čin</th>
-        <th>Lokal</th>
-        <th>Status</th>
-    </tr>
-    {% for p in prisustva %}
-    <tr>
-        <td>{{ forloop.counter }}</td>
-        <td>{{ p.zaposleni.ime_prezime }}</td>
-        <td>{{ p.zaposleni.cin }}</td>
-        <td>{{ p.zaposleni.lokal }}</td>
-        <td>{{ p.status }}</td>
-    </tr>
-    {% endfor %}
-</table>
-
-<a href="{% url 'jutarnji_unos' %}" class="button-link">✏️ Unos / izmena</a>
-
-</body>
+{% for uprava_id, prisustva in tabela.items %}
+    <h3>Uprava ID: {{ uprava_id }}</h3>
+    <table border="1">
+        <tr>
+            <th>Rb</th>
+            <th>Ime i prezime</th>
+            <th>Čin</th>
+            <th>Lokal</th>
+            <th>Status</th>
+        </tr>
+        {% for p in prisustva %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ p.zaposleni.ime_prezime }}</td>
+            <td>{{ p.zaposleni.cin }}</td>
+            <td>{{ p.zaposleni.lokal }}</td>
+            <td>{{ p.status }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <br>
+{% endfor %}
 </html>
