@@ -35,23 +35,23 @@ def jutarnji_unos_view(request):    #metod koji koristi request varijablu, obrad
 
     # Forme po zaposlenima
     formovi_po_upravama = {}
-    if request.method == 'POST':        #ako trazi nesto od programa
-        post_data = request.POST.copy() #daje mu se kopija
-        for uprava_id, zaposleni_lista in uprava_map.items():   #iz dikta se prikazuju sve elementi
+    if request.method == 'POST':        #ako trazi nesto od programa -> korisnik sacuvao formu
+        post_data = request.POST.copy() #stavljau varijablu ono sto je napisao radi operisanja
+        for uprava_id, zaposleni_lista in uprava_map.items():   #iz dikta koji si napravio ranije na onsnovu koje uprave ima pristup sadrzi key: id_uprave i value: zaposleni  
             formovi = []                                        #pravi se array form
-            for zaposleni in zaposleni_lista:
-                prefix = str(zaposleni.id)
-                post_data[f"{prefix}-zaposleni"] = zaposleni.id
-                form = PrisustvoZaZaposlenogForm(post_data, prefix=prefix)
+            for zaposleni in zaposleni_lista:                   #za svakog zaposlenog iz array
+                prefix = str(zaposleni.id)                      #varijabla za zaposleni.id kao str
+                post_data[f"{prefix}-zaposleni"] = zaposleni.id #varijabla koja ce komunicirati sa formom i ubacije u nju hidden input koji nije mogao HTML
+                form = PrisustvoZaZaposlenogForm(post_data, prefix=prefix)  
                 formovi.append((form, zaposleni))               #stavlja u array post data i prefix, zaposleni id
-            formovi_po_upravama[uprava_id] = formovi        
+            formovi_po_upravama[uprava_id] = formovi            
 
         # Validacija svih formi
         if all(form.is_valid() for forms in formovi_po_upravama.values() for form, _ in forms):
             for forms in formovi_po_upravama.values():
                 for form, zaposleni in forms:
                     status = form.cleaned_data['status']
-                    PrisustvoNaDan.objects.update_or_create(        #popunjava 
+                    PrisustvoNaDan.objects.update_or_create(        #popunjava prisustvo na dan sa nekom od zbora statusa
                         zaposleni=zaposleni,            
                         datum=today,
                         defaults={'status': status}
