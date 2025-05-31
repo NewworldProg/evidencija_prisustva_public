@@ -30,7 +30,7 @@ from prisustvo.forms import PrisustvoNaDanForm
 
 fake_data = {
     'zaposleni': 1,  
-    'status': '-'
+    'status': '+'
 }
 
 form = PrisustvoNaDanForm(data=fake_data)
