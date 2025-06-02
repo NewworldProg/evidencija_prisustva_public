@@ -1,78 +1,126 @@
+{% extends 'base.html' %}
 {% load custom_filters %}
-<!DOCTYPE html>
-<html lang="sr">
-<head>
-    <meta charset="UTF-8">
-    <title>📅 Mesečni pregled</title>
-    <style>
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            font-family: Arial, sans-serif;
-        }
 
-        th, td {
-            border: 1px solid #aaa;
-            padding: 4px 8px;
-            text-align: center;
-        }
+{% block content %}
+<style>
+  table.attendance-table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 20px;
+  }
 
-        th {
-            background-color: #f2f2f2;
-        }
+  .attendance-table th, .attendance-table td {
+    border: 1px solid #ccc;
+    text-align: center;
+    padding: 6px;
+    font-size: 14px;
+  }
 
-        tr:nth-child(even) {
-            background-color: #fbfbfb;
-        }
+  .attendance-table th {
+    background-color: #f2f2f2;
+  }
 
-        h2 {
-            color: #1a73e8;
-        }
+  /* Boje po statusima */
+  .status-П { background-color: #d4edda; }  /* prisutan */
+  .status-Н { background-color: #f8d7da; }  /* nepravdan */
+  .status-Б { background-color: #fff3cd; }  /* bolovanje */
+  .status-Х { background-color: #d1ecf1; }  /* home office */
+  .status-Д { background-color: #e2e3e5; }  /* dopust */
+  .status-plus { background-color: rgb(98, 239, 103); } /* pola dana */
+  .status-empty { background-color: #ffffff; }
 
-        form {
-            margin-bottom: 20px;
-        }
-    </style>
-</head>
-<body>
+  select, button {
+    padding: 5px;
+    margin: 5px 0;
+  }
 
-<h2>📅 Mesečni pregled za {{ mesec }} / {{ godina }}</h2>
+  .statistika-zaposlenog {
+    margin-top: 10px;
+    padding: 10px;
+    border-left: 3px solid #007bff;
+    background-color: #f9f9f9;
+  }
 
-<form method="get">
+  .statistika-zaposlenog h4 {
+    margin: 0 0 5px;
+  }
+
+  h4 {
+    margin-top: 30px;
+  }
+
+</style>
+
+<h2>📅 Mesečni pregled prisustva</h2>
+
+<form method="get" class="mb-4">
+  <div class="form-group">
     {{ forma.as_p }}
-    <button type="submit">Filtriraj</button>
+    <button type="submit" class="btn btn-primary">🔍 Prikaži</button>
+  </div>
 </form>
 
-<table>
+<div class="table-responsive">
+  <table class="attendance-table">
     <thead>
-        <tr>
-            <th>Zaposleni</th>
-            {% for dan in dani %}
-                <th>{{ dan }}</th>
-            {% endfor %}
-        </tr>
+      <tr>
+        <th>Zaposleni</th>
+        {% for dan in dani %}
+          <th>{{ dan }}</th>
+        {% endfor %}
+      </tr>
     </thead>
     <tbody>
-        {% for zaposleni, statusi in tabela.items %}
+      {% for z, dani_statusi in tabela.items %}
         <tr>
-            <td>{{ zaposleni }}</td>
-            {% for dan in dani %}
-                {% with status=statusi|get_item:dan %}
-                <td style="background-color: 
-                    {% if status == '+' %}lightgreen
-                    {% elif status == 'Го' %}lightblue
-                    {% elif status == 'Б' %}lightcoral
-                    {% elif status == 'С' %}lightyellow
-                    {% elif status %}lightgray
-                    {% endif %};">
-                    {{ status }}
-                </td>
-                {% endwith %}
-            {% endfor %}
+          <td><strong>{{ z.ime_prezime }}</strong></td>
+          {% for dan in dani %}
+            {% with dani_statusi|get_item:dan as status %}
+              <td class="status-{{ status|slugify_status }}">{{ status }}</td>
+            {% endwith %}
+          {% endfor %}
         </tr>
-        {% endfor %}
+      {% endfor %}
     </tbody>
-</table>
+  </table>
+</div>
 
-</body>
-</html>
+{% if statistika_uprave.brojevi %}
+<h4>📊 Statistika uprave: {{ naziv_uprave }}</h4>
+<ul>
+  {% for status, broj in statistika_uprave.brojevi.items %}
+    <li><strong>{{ status }}</strong>: {{ broj }} ({{ statistika_uprave.procenti|get_item:status }})</li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+<h4>👤 Statistika po zaposlenima</h4>
+<select onchange="prikaziStatistiku(this.value)" class="form-control w-25 mb-3">
+  <option value="">Izaberi zaposlenog</option>
+  {% for z in tabela.keys %}
+    <option value="zaposleni-{{ z.id }}">{{ z.ime_prezime }}</option>
+  {% endfor %}
+</select>
+
+{% for z in tabela.keys %}
+  <div id="zaposleni-{{ z.id }}" class="statistika-zaposlenog" style="display:none;">
+    <h5>{{ z.ime_prezime }}</h5>
+    {% with statistike_po_zaposlenima|get_item:z.id as stat %}
+      <ul>
+        {% for status, broj in stat.brojevi.items %}
+          <li><strong>{{ status }}</strong>: {{ broj }} ({{ stat.procenti|get_item:status }})</li>
+        {% endfor %}
+      </ul>
+    {% endwith %}
+  </div>
+{% endfor %}
+
+<script>
+function prikaziStatistiku(id) {
+  document.querySelectorAll('.statistika-zaposlenog').forEach(e => e.style.display = 'none');
+  if (id) {
+    document.getElementById(id).style.display = 'block';
+  }
+}
+</script>
+{% endblock %}

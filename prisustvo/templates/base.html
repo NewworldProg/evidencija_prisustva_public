@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Evidencija Prisustva{% endblock %}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+        }
+        header, footer {
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid;
+        }
+        .blok {
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>📋 Sistem evidencije prisustva</h1>
+</header>
+
+<main>
+    {% block content %}
+    {% endblock %}
+</main>
+
+<footer>
+    <p>&copy; {{ year|default:"2025" }} Evidencija</p>
+</footer>
+
+</body>
+</html>

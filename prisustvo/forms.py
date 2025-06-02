@@ -13,7 +13,8 @@ PrisustvoFormset = modelformset_factory(
     form=PrisustvoZaZaposlenogForm,
     extra=0
 )
-
+#ne koristi se za sada, moze da bude korisno
+#==================================================================================================
 class PrisustvoNaDanForm(forms.ModelForm):
     class Meta:
         model = PrisustvoNaDan
@@ -31,9 +32,23 @@ class PrisustvoNaDanForm(forms.ModelForm):
 
         self.fields['zaposleni'].label = "Zaposleni"
         self.fields['status'].label = "Status za danas"
+#==================================================================================================
 
 class FilterForma(forms.Form):
     godina = forms.IntegerField(label='Godina', required=False)
     mesec = forms.IntegerField(label='Mesec', required=False)
     uprava = forms.ModelChoiceField(queryset=Uprava.objects.all(), required=False)
     zaposleni = forms.ModelChoiceField(queryset=Zaposleni.objects.all(), required=False)
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+
+        if user and not user.is_superuser and hasattr(user, 'zaposleni'):
+            uprava_korisnika = user.zaposleni.uprava
+            self.fields['uprava'].queryset = Uprava.objects.filter(id=uprava_korisnika.id)
+            self.fields['zaposleni'].queryset = Zaposleni.objects.filter(uprava=uprava_korisnika)
+        else:
+            self.fields['uprava'].queryset = Uprava.objects.all()
+            self.fields['zaposleni'].queryset = Zaposleni.objects.all()
+
