@@ -4,13 +4,17 @@ class PreuzimanjeStatusaIzForme:
 
     @staticmethod
     def validiranje_forme(formovi_po_upravama):
-        if all(form.is_valid() for forms in formovi_po_upravama.values() for form, _ in forms):
-            sve_forme = []
-            for forms in formovi_po_upravama.values():
-                for form, zaposleni in forms:
-                    sve_forme.append((form, zaposleni))
-            return True, sve_forme
-        return False, []
+        sve_forme = []
+        nevalidni_zaposleni = []
+
+        for formovi in formovi_po_upravama.values():
+            for form, zaposleni in formovi:
+                sve_forme.append((form, zaposleni))
+                if not form.is_valid():
+                    nevalidni_zaposleni.append(zaposleni)
+
+        validno = len(nevalidni_zaposleni) == 0
+        return validno, sve_forme, nevalidni_zaposleni
 
     @staticmethod
     def statusi(sve_forme):

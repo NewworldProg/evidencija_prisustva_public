@@ -1,43 +1,57 @@
+{% extends 'base.html' %}
 {% load static %}
 {% load uprava_tags %}
 
-<!DOCTYPE html>
-<html lang="sr">
-<head>
-    <meta charset="UTF-8">
-    <title>Jutarnji unos</title>
-    <style>
-        table {
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
+{% block title %}Jutarnji unos{% endblock %}
 
-        th, td {
-            border: 1px solid #999;
-            padding: 6px 12px;
-            text-align: center;
-        }
+{% block content %}
+<style>
+    table {
+        border-collapse: collapse;
+        margin-top: 20px;
+        width: 100%;
+        font-size: 14px;
+    }
 
-        th {
-            background-color: #f0f0f0;
-        }
+    th, td {
+        border: 1px solid #999;
+        padding: 6px 12px;
+        text-align: center;
+    }
 
-        .success {
-            color: green;
-        }
+    th {
+        background-color: #f0f0f0;
+    }
 
-        .error {
-            color: red;
-        }
+    .success {
+        color: green;
+    }
 
-        h2 {
-            color: #1a73e8;
-        }
-    </style>
-</head>
-<body>
+    .error {
+        color: red;
+    }
 
-<h2>📋 Jutarnji unos za: {{ danas|date:"F d, Y" }}</h2>
+    h2 {
+        color: #1a73e8;
+    }
+
+    button {
+        padding: 8px 16px;
+        font-size: 14px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-top: 10px;
+    }
+
+    button:hover {
+        background-color: #0056b3;
+    }
+</style>
+
+<h2>🕓 Jutarnji unos za: {{ danas|date:"d. F Y" }}</h2>
 
 {% if messages %}
     {% for message in messages %}
@@ -45,35 +59,63 @@
     {% endfor %}
 {% endif %}
 
-<form method="post">
+<form method="post" id="jutarnji-form">
     {% csrf_token %}
     {% for uprava_id, formovi in formovi_po_upravama.items %}
         {% naziv_uprave_po_id uprava_id as naziv %}
         <h3>Uprava: {{ naziv }}</h3>
 
         <table>
-            <tr>
-                <th>Rb</th>
-                <th>Ime i prezime</th>
-                <th>Čin</th>
-                <th>Lokal</th>
-                <th>Status</th>
-            </tr>
-            {% for form, z in formovi %}
-            <tr>
-                <td>{{ forloop.counter }}</td>
-                <td>{{ z.ime_prezime }}</td>
-                <td>{{ z.cin }}</td>
-                <td>{{ z.lokal }}</td>
-                <td>
-                    {{ form.zaposleni }} {# hidden input #}
-                    {{ form.status }}
-                </td>
-            </tr>
-            {% endfor %}
+            <thead>
+                <tr>
+                    <th>Rb</th>
+                    <th>Ime i prezime</th>
+                    <th>Čin</th>
+                    <th>Lokal</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for form, z in formovi %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ z.ime_prezime }}</td>
+                    <td>{{ z.cin }}</td>
+                    <td>{{ z.lokal }}</td>
+                    <td>
+                        {{ form.zaposleni }} {# hidden input #}
+                        {{ form.status }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
         </table>
         <br>
     {% endfor %}
     <button type="submit">✅ Sačuvaj prisustvo</button>
 </form>
-</html>
+
+<script>
+    let formChanged = false;
+
+    // Označi da je forma izmenjena kad se promeni neko polje
+    document.querySelectorAll('#jutarnji-form select').forEach(select => {
+        select.addEventListener('change', () => {
+            formChanged = true;
+        });
+    });
+
+    // Ukloni upozorenje kada se forma submituje
+    document.getElementById('jutarnji-form').addEventListener('submit', () => {
+        formChanged = false;
+    });
+
+    // Ako korisnik pokuša da napusti stranicu
+    window.addEventListener('beforeunload', function (e) {
+        if (formChanged) {
+            e.preventDefault();
+            e.returnValue = 'Unos nije sačuvan. Ako izađete, podaci će biti izgubljeni.';
+        }
+    });
+</script>
+{% endblock %}

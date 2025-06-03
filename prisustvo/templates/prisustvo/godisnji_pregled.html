@@ -1,21 +1,92 @@
-<h2>📆 Godišnji pregled (svi meseci)</h2>
-<table border="1">
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}📈 Godišnji pregled{% endblock %}
+
+{% block content %}
+<style>
+  table.attendance-table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 20px;
+    font-size: 14px;
+  }
+
+  .attendance-table th,
+  .attendance-table td {
+    border: 1px solid #ccc;
+    text-align: center;
+    padding: 6px;
+  }
+
+  .attendance-table th {
+    background-color: #f2f2f2;
+  }
+
+  .status-Го { background-color: #d6f5d6; }
+  .status-Д { background-color: #e6e6ff; }
+  .status-Дс { background-color: #f0e6ff; }
+  .status-Со { background-color: #e0ffff; }
+  .status-Бо { background-color: #fff3cd; }
+  .status-Сп { background-color: #d1ecf1; }
+  .status-Лп { background-color: #f9d6d5; }
+  .status-Опп { background-color: #ffe0e0; }
+  .status-Н { background-color: #fce5cd; }
+  .status-Сд { background-color: #fff; }
+  .status-Оо { background-color: #fef9e7; }
+  .status-Но { background-color: #e8f5e9; }
+  .status-Оп { background-color: #fbe9e7; }
+  .status-Рок { background-color: #d0f0c0; }
+  .status-ПУ { background-color: #e0f7fa; }
+  .status-УоД { background-color: #fffde7; }
+  .status-Упп { background-color: #fff3e0; }
+
+  th, td {
+    white-space: nowrap;
+  }
+
+  h2 {
+    color: #1a73e8;
+  }
+</style>
+
+<h2>📈 Годишњи преглед присуства</h2>
+
+<div class="table-responsive">
+  <table class="attendance-table">
     <thead>
-        <tr>
-            <th>Zaposleni</th>
-            <th>Datum</th>
-            <th>Status</th>
-        </tr>
+      <tr>
+        <th>Ред бр.</th>
+        <th>Чин</th>
+        <th>Презиме и име</th>
+        {% for status in svi_statusi %}
+          <th>{{ status }}</th>
+        {% endfor %}
+        <th>∑</th>
+      </tr>
     </thead>
     <tbody>
-        {% for zaposleni, dani in agregat.items %}
-            {% for datum, status in dani.items %}
-            <tr>
-                <td>{{ zaposleni }}</td>
-                <td>{{ datum }}</td>
-                <td>{{ status }}</td>
-            </tr>
-            {% endfor %}
-        {% endfor %}
+      {% for z, podaci in tabela.items %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ z.cin }}</td>
+          <td>{{ z.ime_prezime }}</td>
+          {% for status in svi_statusi %}
+            {% with podaci.statusi|get_item:status as broj %}
+              <td class="status-{{ status }}">
+                {% if broj %}
+                  {{ broj }} ({{ broj|div:podaci.ukupno|floatformat:0 }}%)
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+            {% endwith %}
+          {% endfor %}
+          <td>{{ podaci.ukupno }}</td>
+        </tr>
+      {% endfor %}
     </tbody>
-</table>
+  </table>
+</div>
+{% endblock %}

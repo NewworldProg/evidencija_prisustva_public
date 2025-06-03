@@ -1,5 +1,8 @@
 {% extends 'base.html' %}
+{% load static %}
 {% load custom_filters %}
+
+{% block title %}📅 Mesečni pregled{% endblock %}
 
 {% block content %}
 <style>
@@ -7,27 +10,37 @@
     border-collapse: collapse;
     width: 100%;
     margin-top: 20px;
+    font-size: 14px;
   }
 
-  .attendance-table th, .attendance-table td {
+  .attendance-table th,
+  .attendance-table td {
     border: 1px solid #ccc;
     text-align: center;
     padding: 6px;
-    font-size: 14px;
   }
 
   .attendance-table th {
     background-color: #f2f2f2;
   }
 
-  /* Boje po statusima */
-  .status-П { background-color:rgb(47, 116, 63); }  /* prisutan */
-  .status-Н { background-color: #f8d7da; }  /* nepravdan */
-  .status-Б { background-color: #fff3cd; }  /* bolovanje */
-  .status-Х { background-color: #d1ecf1; }  /* home office */
-  .status-Д { background-color: #e2e3e5; }  /* dopust */
-  .status-plus { background-color: rgb(98, 239, 103); } /* pola dana */
-  .status-empty { background-color: #ffffff; }
+  .status-Го { background-color: #d6f5d6; }
+  .status-Д { background-color: #e6e6ff; }
+  .status-Дс { background-color: #f0e6ff; }
+  .status-Со { background-color: #e0ffff; }
+  .status-Бо { background-color: #fff3cd; }
+  .status-Сп { background-color: #d1ecf1; }
+  .status-Лп { background-color: #f9d6d5; }
+  .status-Опп { background-color: #ffe0e0; }
+  .status-Н { background-color: #fce5cd; }
+  .status-Сд { background-color: #fff; }
+  .status-Оо { background-color: #fef9e7; }
+  .status-Но { background-color: #e8f5e9; }
+  .status-Оп { background-color: #fbe9e7; }
+  .status-Рок { background-color: #d0f0c0; }
+  .status-ПУ { background-color: #e0f7fa; }
+  .status-УоД { background-color: #fffde7; }
+  .status-Упп { background-color: #fff3e0; }
 
   select, button {
     padding: 5px;
@@ -41,21 +54,35 @@
     background-color: #f9f9f9;
   }
 
-  .statistika-zaposlenog h4 {
+  .statistika-zaposlenog h5 {
     margin: 0 0 5px;
   }
 
-  h4 {
-    margin-top: 30px;
+  h2, h4 {
+    color: #1a73e8;
   }
-
 </style>
 
-<h2>📅 Mesečni pregled prisustva</h2>
+<h2>📅 Mesečni pregled prisustva za {{ godina }}</h2>
 
 <form method="get" class="mb-4">
   <div class="form-group">
-    {{ forma.as_p }}
+    <p>
+      <label for="{{ forma.mesec.id_for_label }}">Mesec:</label>
+      {{ forma.mesec }}
+    </p>
+    <p>
+      <label for="{{ forma.godina.id_for_label }}">Godina:</label>
+      {{ forma.godina }}
+    </p>
+    <p>
+      <label for="{{ forma.uprava.id_for_label }}">Uprava:</label>
+      {{ forma.uprava }}
+    </p>
+    <p>
+      <label for="{{ forma.zaposleni.id_for_label }}">Zaposleni:</label>
+      {{ forma.zaposleni }}
+    </p>
     <button type="submit" class="btn btn-primary">🔍 Prikaži</button>
   </div>
 </form>
@@ -86,12 +113,12 @@
 </div>
 
 {% if statistika_uprave.brojevi %}
-<h4>📊 Statistika uprave: {{ naziv_uprave }}</h4>
-<ul>
-  {% for status, broj in statistika_uprave.brojevi.items %}
-    <li><strong>{{ status }}</strong>: {{ broj }} ({{ statistika_uprave.procenti|get_item:status }})</li>
-  {% endfor %}
-</ul>
+  <h4>📊 Statistika uprave: {{ naziv_uprave }}</h4>
+  <ul>
+    {% for status, broj in statistika_uprave.brojevi.items %}
+      <li><strong>{{ status }}</strong>: {{ broj }} ({{ statistika_uprave.procenti|get_item:status }})</li>
+    {% endfor %}
+  </ul>
 {% endif %}
 
 <h4>👤 Statistika po zaposlenima</h4>

@@ -36,7 +36,16 @@ class PrisustvoNaDanForm(forms.ModelForm):
 
 class FilterForma(forms.Form):
     godina = forms.IntegerField(label='Godina', required=False)
-    mesec = forms.IntegerField(label='Mesec', required=False)
+    MESECI = [
+    (1, 'Januar'), (2, 'Februar'), (3, 'Mart'), (4, 'April'),
+    (5, 'Maj'), (6, 'Jun'), (7, 'Jul'), (8, 'Avgust'),
+    (9, 'Septembar'), (10, 'Oktobar'), (11, 'Novembar'), (12, 'Decembar'),
+]
+    mesec = forms.ChoiceField(
+        label='Mesec',
+        choices=MESECI,
+        required=False
+    )
     uprava = forms.ModelChoiceField(queryset=Uprava.objects.all(), required=False)
     zaposleni = forms.ModelChoiceField(queryset=Zaposleni.objects.all(), required=False)
 

@@ -4,6 +4,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.utils import timezone
 from datetime import date
 from django.contrib import messages
+from collections import Counter
 
 from ..models import PrisustvoNaDan, PrisustvoMesec, Zaposleni, Uprava
 from ..forms import FilterForma
@@ -40,7 +41,7 @@ def jutarnji_unos_view(request):
 
     if request.method == 'POST':
         formovi_po_upravama = FormeZaIzmenuStatusa.izmena(request, uprava_map)
-        validno, sve_forme = PreuzimanjeStatusaIzForme.validiranje_forme(formovi_po_upravama)
+        validno, sve_forme, nevalidni_zaposleni = PreuzimanjeStatusaIzForme.validiranje_forme(formovi_po_upravama)
 
         if validno:
             statusi_i_zaposleni = PreuzimanjeStatusaIzForme.statusi(sve_forme)
@@ -61,8 +62,14 @@ def jutarnji_unos_view(request):
 
             messages.success(request, "✅ Prisustvo uspešno sačuvano.")
             return redirect('dnevni_pregled')
-        else:
-            messages.error(request, "❌ Greška u formi.")
+        #else:
+            if nevalidni_zaposleni:
+                imena = ', '.join(z.ime_prezime for z in nevalidni_zaposleni)
+                poruka = f"❌ Sledeći zaposleni nemaju unet status: {imena}."
+            else:
+                poruka = "❌ Greška u formi."
+
+            messages.error(request, poruka)
     else:
         formovi_po_upravama = FormeZaIzmenuStatusa.initial_forme(uprava_map, prisustva_dict)
 
@@ -167,16 +174,34 @@ def mesecni_pregled_view(request):
 
 @login_required
 def godisnji_pregled_view(request):
-    zaposlenici = Zaposleni.objects.all()
     evidencija = PrisustvoMesec.objects.all()
 
-    agregat = {}
+    # Sortiranje zaposlenih po upravama
+    uprava_map = {}
+    uprava_map = SortiranjePoUpravama.superuser(request, uprava_map)
+    uprava_map = SortiranjePoUpravama.user(request, uprava_map)
+
+    # Kombinuj sve zaposlene iz mapa u jednu listu
+    zaposlenici = [z for zaposleni_qs in uprava_map.values() for z in zaposleni_qs]
+
+    tabela = {}
+
     for z in zaposlenici:
-        agregat[z] = {}
-        for e in evidencija.filter(zaposleni=z):
-            kljuc = f"{e.godina}-{e.mesec:02d}-{e.dan:02d}"
-            agregat[z][kljuc] = e.status
+        statusi = evidencija.filter(zaposleni=z).values_list('status', flat=True)
+        brojac = Counter(statusi)
+        ukupno = sum(brojac.values())
+
+        tabela[z] = {
+            'statusi': brojac,
+            'ukupno': ukupno
+        }
+
+    svi_statusi = [
+        'Го', 'Д', 'Дс', 'Со', 'Бо', 'Сп', 'Лп',
+        'Опп', 'Н', 'Сд', 'Дк', 'Оо', 'Но', 'Оп'
+    ]
 
     return render(request, 'prisustvo/godisnji_pregled.html', {
-        'agregat': agregat
+        'tabela': tabela,
+        'svi_statusi': svi_statusi,
     })

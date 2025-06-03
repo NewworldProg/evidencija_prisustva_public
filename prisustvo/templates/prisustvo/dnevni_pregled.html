@@ -1,23 +1,46 @@
+{% extends 'base.html' %}
 {% load static %}
 {% load dict_filters %}
 {% load uprava_tags %}
 
+{% block title %}📋 Dnevni pregled{% endblock %}
 
-<!DOCTYPE html>
-<html lang="sr">
-<head>
-    <meta charset="UTF-8">
-    <title>📋 Dnevni pregled</title>
-</head>
-<body>
-
+{% block content %}
 <h2>📋 Dnevni pregled za: {{ danas|date:"F d, Y" }}</h2>
 
+<style>
+    table {
+        border-collapse: collapse;
+        margin-top: 20px;
+        width: 100%;
+        font-size: 14px;
+    }
+
+    th, td {
+        border: 1px solid #999;
+        padding: 6px 12px;
+        text-align: center;
+    }
+
+    th {
+        background-color: #f0f0f0;
+    }
+
+    h2, h3, h4 {
+        color: #1a73e8;
+    }
+
+    ul {
+        margin-top: 10px;
+        margin-bottom: 30px;
+    }
+</style>
+
 {% for uprava_id, prisustva in tabela.items %}
-{% naziv_uprave_po_id uprava_id as naziv %}
+    {% naziv_uprave_po_id uprava_id as naziv %}
     <h3>Uprava: {{ naziv }}</h3>
 
-    <table border="1">
+    <table>
         <tr>
             <th>Rb</th>
             <th>Ime i prezime</th>
@@ -45,8 +68,5 @@
             {% endfor %}
         </ul>
     {% endwith %}
-    <br>
 {% endfor %}
-
-</body>
-</html>
+{% endblock %}

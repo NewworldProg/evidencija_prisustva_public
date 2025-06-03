@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="sr">
 <head>
@@ -6,29 +7,45 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 40px;
+            margin: 10px;
         }
-        header, footer {
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid;
+
+        .glavna-strana-dugme {
+            display: inline-block;
+            margin-bottom: 0px;
+            background-color: #f0f0f0;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            text-decoration: none;
+            color: black;
+            box-shadow: 1px 1px 5px rgba(0,0,0,0.1);
+            transition: background-color 0.2s ease-in-out;
         }
-        .blok {
-            margin: 20px 0;
+
+        .glavna-strana-dugme:hover {
+            background-color:rgb(126, 168, 204);
+        }
+
+        footer {
+            margin-top: 40px;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
         }
     </style>
 </head>
 <body>
 
-<header>
-    <h1>📋 Sistem evidencije prisustva</h1>
-</header>
+<!-- Dugme za Početnu -->
+<a class="glavna-strana-dugme" href="{% url 'home' %}">🏠 Početna</a>
 
+<!-- Sadržaj stranice -->
 <main>
     {% block content %}
     {% endblock %}
 </main>
 
+<!-- Footer -->
 <footer>
     <p>&copy; {{ year|default:"2025" }} Evidencija</p>
 </footer>

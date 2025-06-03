@@ -19,19 +19,27 @@ class Zaposleni(models.Model):
 
 class PrisustvoNaDan(models.Model):
     STATUSI = [
-        ('+', 'Prisutan'),
         ('Го', 'Godišnji odmor'),
         ('Д', 'Dežurstvo'),
-        ('Б', 'Bolovanje'),
-        ('С', 'Slobodan'),
-        ('Н', 'Neopravdano'),
-        ('Р', 'Rad od kuće'),
-        ('О', 'Odsutan'),
-    ]
+        ('Дс', 'Slobodan dan dež.'),
+        ('Со', 'Služ. odsut. van upr.'),
+        ('Бо', 'Bolovanje'),
+        ('Сп', 'Službeni put'),
+        ('Лп', 'Lekarski pregled'),
+        ('Опп', 'Ostali privatni poslovi'),
+        ('Н', 'Nepoznato do 07:55'),
+        ('Сд', 'Slobodan dan'),
+        ('Оо', 'Ost. odsustvo do 7 dana'),
+        ('Но', 'Nagradno odsustvo'),
+        ('Оп', 'Obilazak porodice'),
+        ('Рок', 'Rad od kuće'),
+        ('ПУ', 'Priv. upućeni van uprave'),
+        ('УоД', 'Ugovor o delu'),
+        ('Упп', 'Ugovor o priv. pov. poslovima'),
+        ]
     zaposleni = models.ForeignKey(Zaposleni, on_delete=models.CASCADE)
     datum = models.DateField()
-    status = models.CharField(max_length=5, choices=STATUSI)
-
+    status = models.CharField(max_length=10, choices=STATUSI, null=False, blank=False)
     class Meta:
         unique_together = ('zaposleni', 'datum')
 
