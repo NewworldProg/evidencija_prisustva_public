@@ -1,4 +1,6 @@
 {% load static %}
+{% load uprava_tags %}
+
 <!DOCTYPE html>
 <html lang="sr">
 <head>
@@ -46,7 +48,9 @@
 <form method="post">
     {% csrf_token %}
     {% for uprava_id, formovi in formovi_po_upravama.items %}
-        <h3>Uprava ID: {{ uprava_id }}</h3>
+        {% naziv_uprave_po_id uprava_id as naziv %}
+        <h3>Uprava: {{ naziv }}</h3>
+
         <table>
             <tr>
                 <th>Rb</th>

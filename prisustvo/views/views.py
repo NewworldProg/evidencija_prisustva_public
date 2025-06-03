@@ -6,12 +6,19 @@ from datetime import date
 from django.contrib import messages
 
 from ..models import PrisustvoNaDan, PrisustvoMesec, Zaposleni, Uprava
-from ..forms import FilterForma, PrisustvoZaZaposlenogForm
-from .services.forme_za_izmenu_statusa import FormeZaIzmenuStatusa
-from .services.preuzimanje_statusa_iz_forme import PreuzimanjeStatusaIzForme
-from .services.sortiranje_po_upravama import SortiranjePoUpravama
-from .services.prisustvo_service import dohvati_prisustva_po_upravama
-from .services.statistika_service import izracunaj_statistiku_po_entitetima
+from ..forms import FilterForma
+
+# Servisi po view-ovima
+from .services.jutarnji_unos.forme_za_izmenu_statusa import FormeZaIzmenuStatusa
+from .services.jutarnji_unos.preuzimanje_statusa_iz_forme import PreuzimanjeStatusaIzForme
+from .services.dnevni_pregled.statistika import pripremi_statistiku_po_upravama
+from .services.mesecni_pregled.statistika import (
+    izracunaj_statistiku_po_zaposlenima,
+    izracunaj_statistiku_za_upravu
+)
+
+# Zajedničke logike
+from .services.zajednicko.sortiranje_po_upravama import SortiranjePoUpravama
 
 
 
@@ -22,8 +29,10 @@ def home_view(request):
 @login_required
 def jutarnji_unos_view(request):
     today = timezone.now().date()
-
-    prisustva_dict = {p.zaposleni_id: p for p in PrisustvoNaDan.objects.filter(datum=today)}
+    prisustva_dict = {
+        p.zaposleni_id: p
+        for p in PrisustvoNaDan.objects.filter(datum=today)
+    }
 
     uprava_map = {}
     uprava_map = SortiranjePoUpravama.superuser(request, uprava_map)
@@ -71,13 +80,7 @@ def dnevni_pregled_view(request):
     uprava_map = SortiranjePoUpravama.superuser(request, uprava_map)
     uprava_map = SortiranjePoUpravama.user(request, uprava_map)
 
-    tabela = dohvati_prisustva_po_upravama(uprava_map, today)
-
-    statistike = {}
-    for uprava_id, zaposleni_lista in uprava_map.items():
-        prisustva = tabela.get(uprava_id, [])
-        statistike_po_upravi = izracunaj_statistiku_po_entitetima([uprava_id], prisustva, entitet_polje='zaposleni')
-        statistike[uprava_id] = statistike_po_upravi.get(uprava_id, {'ukupno': 0, 'brojevi': {}, 'procenti': {}})
+    tabela, statistike = pripremi_statistiku_po_upravama(uprava_map, today)
 
     return render(request, 'prisustvo/dnevni_pregled.html', {
         'tabela': tabela,
@@ -120,11 +123,17 @@ def mesecni_pregled_view(request):
 
     forma = FilterForma(request.GET or None)
 
-    zaposlenici = Zaposleni.objects.all().select_related('uprava')
+    # Sortirani zaposleni po upravi
     if uprava_id:
-        zaposlenici = zaposlenici.filter(uprava__id=uprava_id)
+        zaposlenici = SortiranjePoUpravama.zaposleni_iz_uprave(request, uprava_id)
+    else:
+        # Ako nije izabrana uprava i superuser je, prikaži sve
+        svi_zaposleni = {}
+        svi_zaposleni = SortiranjePoUpravama.superuser(request, svi_zaposleni)
+        zaposlenici = [z for zaposleni_qs in svi_zaposleni.values() for z in zaposleni_qs]
+
     if zaposleni_id:
-        zaposlenici = zaposlenici.filter(id=zaposleni_id)
+        zaposlenici = [z for z in zaposlenici if z.id == int(zaposleni_id)]
 
     evidencija = PrisustvoMesec.objects.filter(godina=godina, mesec=mesec)
 
@@ -136,10 +145,8 @@ def mesecni_pregled_view(request):
             tabela[z][dan] = zapis.status if zapis else ''
 
     dani = list(range(1, 32))
-
-    statistike_po_zaposlenima = izracunaj_statistiku_po_entitetima(zaposlenici, evidencija, entitet_polje='zaposleni')
-
-    statistika_uprave = izracunaj_statistiku_po_entitetima(zaposlenici, evidencija, entitet_polje='zaposleni')
+    statistike_po_zaposlenima = izracunaj_statistiku_po_zaposlenima(zaposlenici, evidencija)
+    statistika_uprave = izracunaj_statistiku_za_upravu(zaposlenici, evidencija)
 
     if uprava_id:
         zaposleni_iz_uprave = Zaposleni.objects.filter(uprava__id=uprava_id).first()
@@ -157,7 +164,6 @@ def mesecni_pregled_view(request):
         'statistika_uprave': statistika_uprave,
         'naziv_uprave': naziv_uprave,
     })
-
 
 @login_required
 def godisnji_pregled_view(request):

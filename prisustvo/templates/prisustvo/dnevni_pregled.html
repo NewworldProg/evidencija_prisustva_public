@@ -1,5 +1,7 @@
 {% load static %}
 {% load dict_filters %}
+{% load uprava_tags %}
+
 
 <!DOCTYPE html>
 <html lang="sr">
@@ -12,7 +14,9 @@
 <h2>📋 Dnevni pregled za: {{ danas|date:"F d, Y" }}</h2>
 
 {% for uprava_id, prisustva in tabela.items %}
-    <h3>Uprava ID: {{ uprava_id }}</h3>
+{% naziv_uprave_po_id uprava_id as naziv %}
+    <h3>Uprava: {{ naziv }}</h3>
+
     <table border="1">
         <tr>
             <th>Rb</th>
