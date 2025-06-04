@@ -17,6 +17,7 @@ from .services.mesecni_pregled.statistika import (
     izracunaj_statistiku_po_zaposlenima,
     izracunaj_statistiku_za_upravu
 )
+from prisustvo.views.services.mesecni_pregled.forms import MesecGodinaFilterForma
 
 # Zajedničke logike
 from .services.zajednicko.sortiranje_po_upravama import SortiranjePoUpravama
@@ -117,6 +118,10 @@ def register_view(request):
 @login_required
 def mesecni_pregled_view(request):
     danas = date.today()
+    forma = FilterForma(request.GET or None, initial={
+    'mesec': danas.month,
+    'godina': danas.year
+    }, user=request.user)
     godina_str = request.GET.get('godina')
     mesec_str = request.GET.get('mesec')
     uprava_id = request.GET.get('uprava')
@@ -128,7 +133,11 @@ def mesecni_pregled_view(request):
     godina = int(godina_str) if godina_str else danas.year
     mesec = int(mesec_str) if mesec_str else danas.month
 
-    forma = FilterForma(request.GET or None)
+    evidencija_forma = MesecGodinaFilterForma(request.GET)
+    if evidencija_forma.is_valid():
+        evidencija = evidencija_forma.filtriraj(godina, mesec)
+    else:
+        evidencija = PrisustvoMesec.objects.none()
 
     # Sortirani zaposleni po upravi
     if uprava_id:
@@ -141,8 +150,6 @@ def mesecni_pregled_view(request):
 
     if zaposleni_id:
         zaposlenici = [z for z in zaposlenici if z.id == int(zaposleni_id)]
-
-    evidencija = PrisustvoMesec.objects.filter(godina=godina, mesec=mesec)
 
     tabela = {}
     for z in zaposlenici:

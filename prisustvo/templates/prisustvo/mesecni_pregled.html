@@ -75,10 +75,12 @@
       <label for="{{ forma.godina.id_for_label }}">Godina:</label>
       {{ forma.godina }}
     </p>
-    <p>
-      <label for="{{ forma.uprava.id_for_label }}">Uprava:</label>
-      {{ forma.uprava }}
-    </p>
+    {% if forma.uprava %}
+      <p>
+        <label for="{{ forma.uprava.id_for_label }}">Uprava:</label>
+        {{ forma.uprava }}
+      </p>
+    {% endif %}
     <p>
       <label for="{{ forma.zaposleni.id_for_label }}">Zaposleni:</label>
       {{ forma.zaposleni }}

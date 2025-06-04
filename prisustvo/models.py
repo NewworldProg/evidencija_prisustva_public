@@ -39,7 +39,7 @@ class PrisustvoNaDan(models.Model):
         ]
     zaposleni = models.ForeignKey(Zaposleni, on_delete=models.CASCADE)
     datum = models.DateField()
-    status = models.CharField(max_length=255)
+    status = models.CharField(max_length=10, choices=STATUSI)
     class Meta:
         unique_together = ('zaposleni', 'datum')
 

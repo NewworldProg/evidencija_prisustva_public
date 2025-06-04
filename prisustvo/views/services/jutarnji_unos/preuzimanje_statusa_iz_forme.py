@@ -3,7 +3,7 @@
 class PreuzimanjeStatusaIzForme:
 
     @staticmethod
-    def validiranje_forme(formovi_po_upravama):
+    def validiranje_forme(formovi_po_upravama):     #forma je validna ako se na osnovu nje moze popuniti model cije kolone koristi
         sve_forme = []
         nevalidni_zaposleni = []
 

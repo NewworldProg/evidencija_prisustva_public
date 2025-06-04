@@ -1,6 +1,7 @@
 from django import forms
 from django.forms import modelformset_factory
 from .models import PrisustvoNaDan, Zaposleni, Uprava
+from datetime import date
 
 class PrisustvoZaZaposlenogForm(forms.ModelForm):
     class Meta:
@@ -34,18 +35,19 @@ class PrisustvoNaDanForm(forms.ModelForm):
         self.fields['status'].label = "Status za danas"
 #==================================================================================================
 
+from datetime import date
+
 class FilterForma(forms.Form):
     godina = forms.IntegerField(label='Godina', required=False)
+
     MESECI = [
-    (1, 'Januar'), (2, 'Februar'), (3, 'Mart'), (4, 'April'),
-    (5, 'Maj'), (6, 'Jun'), (7, 'Jul'), (8, 'Avgust'),
-    (9, 'Septembar'), (10, 'Oktobar'), (11, 'Novembar'), (12, 'Decembar'),
-]
-    mesec = forms.ChoiceField(
-        label='Mesec',
-        choices=MESECI,
-        required=False
-    )
+        (1, 'Januar'), (2, 'Februar'), (3, 'Mart'), (4, 'April'),
+        (5, 'Maj'), (6, 'Jun'), (7, 'Jul'), (8, 'Avgust'),
+        (9, 'Septembar'), (10, 'Oktobar'), (11, 'Novembar'), (12, 'Decembar'),
+    ]
+    mesec = forms.ChoiceField(label='Mesec', choices=MESECI, required=False)
+    
+    # Privremeno uključujemo uprava i zaposleni, pa ih uslovno uklanjamo
     uprava = forms.ModelChoiceField(queryset=Uprava.objects.all(), required=False)
     zaposleni = forms.ModelChoiceField(queryset=Zaposleni.objects.all(), required=False)
 
@@ -53,9 +55,15 @@ class FilterForma(forms.Form):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
 
+        danas = date.today()
+        self.fields['mesec'].initial = danas.month
+        self.fields['godina'].initial = danas.year
+
         if user and not user.is_superuser and hasattr(user, 'zaposleni'):
             uprava_korisnika = user.zaposleni.uprava
-            self.fields['uprava'].queryset = Uprava.objects.filter(id=uprava_korisnika.id)
+            # Sakrivamo polje "uprava" iz forme
+            self.fields.pop('uprava', None)
+            # Filtriramo zaposlene po upravi
             self.fields['zaposleni'].queryset = Zaposleni.objects.filter(uprava=uprava_korisnika)
         else:
             self.fields['uprava'].queryset = Uprava.objects.all()
